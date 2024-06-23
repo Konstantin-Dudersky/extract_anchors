@@ -17,7 +17,7 @@ use std::{
     fs::{read_to_string, remove_dir_all},
 };
 
-use tracing::{debug, error, level_filters::LevelFilter};
+use tracing::{debug, error, level_filters::LevelFilter, warn};
 use walkdir::WalkDir;
 
 use anchors_in_file::{AnchorKind, AnchorsInFile};
@@ -53,10 +53,13 @@ fn main_() -> crate::Result<()> {
     };
 
     // Удаляем целевую папку
-    delete_target_directory(&target_dir)?;
+    let res = delete_target_directory(&target_dir);
+    if let Err(err) = res {
+        warn!("{}", err);
+    }
 
     // Рекурсивно проходим по исходной папке
-    for entry in WalkDir::new(source_dir) {
+    for entry in WalkDir::new(&source_dir) {
         let entry = entry.unwrap();
         if !entry.file_type().is_file() {
             continue;
@@ -81,7 +84,7 @@ fn main_() -> crate::Result<()> {
             continue;
         }
         debug!("File: {}; anchors: {:?}", entry.path().display(), info);
-        let new_path = create_new_path(entry.path(), &target_dir);
+        let new_path = create_new_path(entry.path(), &source_dir, &target_dir);
         std::fs::create_dir_all(&new_path).unwrap();
         for info_part in info.iter() {
             let mut new_file = vec![];
