@@ -27,4 +27,7 @@ pub enum Error {
 
     #[error("Wrong CLI parameters: {0}. Need 2: source_dir and target_dir")]
     CliParameters(String),
+
+    #[error("Error reading file: {file_name}, error: {file_name}")]
+    ReadFile { file_name: String, error: String },
 }
