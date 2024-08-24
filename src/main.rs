@@ -16,7 +16,7 @@ pub use result::Result;
 use std::{env, fs::remove_dir_all};
 
 use tracing::{debug, error, level_filters::LevelFilter, warn};
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 
 use anchors_in_file::{AnchorKind, AnchorsInFile};
 use create_new_path::create_new_path;
@@ -57,7 +57,8 @@ fn main_() -> crate::Result<()> {
     }
 
     // Рекурсивно проходим по исходной папке
-    for entry in WalkDir::new(&source_dir) {
+    let walker = WalkDir::new(&source_dir).into_iter();
+    for entry in walker.filter_entry(|e| filter_directories(e)) {
         let entry = entry.unwrap();
 
         if !entry.file_type().is_file() {
@@ -116,4 +117,13 @@ fn main_() -> crate::Result<()> {
 fn delete_target_directory(target_dir: &str) -> crate::Result<()> {
     remove_dir_all(target_dir).map_err(crate::Error::RemoveTargetDir)?;
     Ok(())
+}
+
+/// Фильтруем служебные папки
+fn filter_directories(entry: &DirEntry) -> bool {
+    entry
+        .file_name()
+        .to_str()
+        .map(|s| s != "node_modules" && s != "target")
+        .unwrap_or(false)
 }
